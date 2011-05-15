@@ -1,0 +1,113 @@
+==Prepare the Installation==
+
+{{Note|If you wish to install to another partition from within an existing GNU/Linux distribution or LiveCD, please see [[Install from Existing Linux|this wiki article]] for steps to do this. This can be useful particularly if you plan to install Arch via VNC or SSH remotely. The following assumes installation by conventional means.}}
+
+===Obtain the latest Installation media ===
+
+You can obtain Arch's official installation media from [http://archlinux.org/download/ here]. The latest version is 2010.05
+
+* Both the Core and the Netinstall images provide only the necessary packages to create an '''Arch Linux base system'''. ''Note that the Base System does not include a GUI. It is mainly comprised of the GNU toolchain (compiler, assembler, linker, libraries, shell, and utilities), the Linux kernel, and a few extra libraries and modules.''
+* Core images facilitate both installing from CD and Net.
+* Netinstall images are smaller and provide no packages themselves; the entire system is retrieved via internet.
+* [[Arch64_FAQ|The Arch64 FAQ]] can help you choose between the 32-, 64-bit and dual versions.
+* Remember to download the checksum txt files along with your chosen ISO.
+
+Pre-release images are also available and can be downloaded [http://releng.archlinux.org/isos/ here]. '''These are not official releases and so are not officially supported.''' They should only be used if the official installation images do not work with the current hardware on your system and you suspect newer images will have the appropriate drivers. 
+
+====Check the Integrity of the Downloaded File====
+
+<code>cd</code> to the directory where the downloaded files have been placed, and invoke <code>sha1sum</code>:
+ $ sha1sum --check name_of_checksum_file.txt name_of_selected_iso_file.iso
+This should give you an "OK" for the one you have.  (Simply ignore other lines.)  If not, download all files again.
+The md5sum check works the same way.
+
+====Install Over a Network====
+
+Instead of writing the boot media to a disc or USB drive, you may alternatively boot the .iso image over the network. This works well when you already have a server set up. Please see [[Install Arch from network (via PXE)|this article]] for more information, and then continue to [[#Boot Arch Linux Installer|Boot Arch Linux Installer]]
+
+====CD installer====
+
+Burn the .iso image file to a CD or DVD media with your preferred CD/DVD burner drive and software, and continue with [[#Boot Arch Linux Installer | Boot Arch Linux Installer]]
+{{Note| The quality of optical drives, as well as the CD media itself, vary greatly. Generally, using a slow burn speed is recommended for reliable burns; Some users recommend speeds '''''as low as 4x or 2x.''''' If you are experiencing unexpected behavior from the CD, try burning at the minimum speed supported by your system. }}
+
+====Flash Memory Device or USB stick====
+
+See [[Install_from_a_USB_flash_drive|Install from a USB flash drive]] for more detailed instructions.
+
+This method will work for any type of flash media from which your BIOS will let you boot, be it a card reader or USB port.
+
+{{Warning|This procedure will irrevocably destroy all data on your media! Also, be very careful where you send the image ISO, as <code>dd</code> will obediently  write to any target you point to, even if that is your hard disk.}}
+
+=====*nix Method=====
+
+Insert an empty or expendable flash device, determine its path, and write the .iso to the device with the <code>dd</code> program:
+ # dd if=archlinux-2010.05-''{core|netinstall}''-''{i686|x86_64|dual}''.iso of=/dev/sd''x''
+where <code>if=</code> is the path to the .iso file and <code>of=</code> is your flash device. Make sure to use {{Filename|/dev/sd'''x'''}} and not {{Filename|/dev/sd'''x1'''}}. You will need a flash memory device large enough to accommodate the image.
+
+To verify that the image was successfully written to the flash device, make a note of the number of records (blocks) read in and written out, then perform the following check:
+ $ dd if=/dev/sd''x'' count=''number_of_records'' status=noxfer | md5sum
+The md5sum returned should match the [ftp://ftp.archlinux.org/iso/2010.05/md5sums.txt md5sum of the downloaded archlinux image file (2010.05)]; they both should match the md5sum of the image as listed in the md5sums file in the mirror distribution site. A typical run will look like this: 
+{{Command|<nowiki>[sudo] dd if=archlinux-2010.05-core-i686.iso of=/dev/sdc #Write .iso to drive</nowiki>|<nowiki> 744973+0 records in
+ 744973+0 records out
+ 381426176 bytes (381 MB) copied, 106.611 s, 3.6 MB/s
+</nowiki>}}
+
+{{Command|<nowiki>[sudo] dd if=/dev/sdc count=744973 status=noxfer | md5sum #Verify integrity</nowiki>| 4850d533ddd343b80507543536258229  -
+ 744973+0 records in
+ 744973+0 records out}}
+
+Continue with [[#Boot Arch Linux Installer | Boot Arch Linux Installer]]
+
+=====Microsoft Windows Method=====
+
+Download Disk Imager from https://launchpad.net/win32-image-writer/+download. Insert flash media. Start the Disk Imager and select the image file (Disk Imager accepts only *.IMG files, so you'll have to put "*.iso" in file open dialog to select Arch snapshot). Select the drive letter associated with the flash drive. Click "write".
+
+There are also other solutions to [[Install_from_a_USB_flash_drive#On_Windows|writing bootable ISO images to USB sticks]]. If you have problems with USB sticks disconnecting, try using different USB port and/or cable.
+
+Continue with [[#Boot Arch Linux Installer | Boot Arch Linux Installer]]
+
+===Boot Arch Linux Installer===
+{{Tip|The memory requirement for a basic install is 64 MB of RAM.}}
+
+{{Tip|During the process, the automatic screen blanker may come on.  If so, one can press the Alt key to safely obtain the normal display.}}
+
+====Boot from the Media====
+Insert the CD or Flash media you prepared, and boot from it. You may have to
+change the boot order in your computer BIOS or press a key (usually DEL, F1, F2, F11 or F12) during the BIOS POST (Power On Self-Test) phase.
+
+'''Main Menu:''' The main menu should be displayed at this point.  Select the preferred choice by using the arrow keys to highlight your choice, and then by pressing Enter. Menus vary slightly among the different ISOs.
+
+{{Note|Users seeking to perform the Arch Linux installation remotely via an ssh connection are encouraged to make a few tweaks at this point to enable ssh connections directly to the live CD environment.  If interested, see the [[Install from SSH]] article.}}
+
+====OS System Start====
+The system will now load and present a login prompt. Login as 'root', without the quotes.
+
+If using an Intel video chipset and the screen goes blank during the boot process, the problem is likely an issue with kernel mode setting. A possible workaround may be achieved by rebooting and pressing <Tab> at the GRUB menu to enter kernel options.  At the end of the kernel line, add a space and then:
+ i915.modeset=0
+Alternatively, add:
+ video=SVIDEO-1:d
+which (if it works) will not disable kernel mode setting.
+
+When done making any changes to any menu command, simply press "Enter" to boot with that setup.
+
+See [[Intel| the Intel article]] for more information.
+
+====Changing the keymap====
+If you have a non-US keyboard layout you can interactively choose your keymap/console font with the command:
+ # km
+or use the loadkeys command:
+ # loadkeys ''layout''
+where ''layout'' is your keyboard layout such as &quot;<code>fr</code>&quot; or &quot;<code>be-latin1</code>&quot;
+
+====Documentation====
+The official install guide is conveniently available right on the live system! To access it, change to tty2 (virtual console #2) with <ALT>+F2, log in as "root" and then invoke <code>/usr/bin/less</code> by typing in the following at the # prompt:
+ # less /usr/share/aif/docs/official_installation_guide_en
+<code>less</code> will allow you to page through the document.
+
+Change back to tty1 with <ALT>+F1 to follow the rest of the install process.  (Change back to tty2 at any time if you need to reference the Official Guide as you progress through the installation process.)
+
+{{tip|Please note that the official guide only covers installation and configuration of the base system. Once that is installed, it is strongly recommended that you come back here to the wiki to find out more about post-installation considerations and other related issues.}}<noinclude>
+
+{{Beginners' Guide navigation}}
+</noinclude>
+

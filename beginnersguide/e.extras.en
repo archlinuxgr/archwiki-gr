@@ -1,0 +1,201 @@
+==Extras==
+You should now have a completely functional Arch system which will act as a suitable base for you to build upon based on your needs. However, most people are interested in a desktop system, complete with sound and graphics. This part of the guide will provide a brief overview of the procedure to acquire these extras.
+
+===Sound===
+If you want sound, proceed to [[Advanced Linux Sound Architecture]] for instructions. Alternatively, proceed to the [[#Graphical User Interface|next section]] first, and set up sound later.
+
+The [[Wikipedia:Advanced Linux Sound Architecture|Advanced Linux Sound Architecture]] (ALSA) is included with the kernel and it is recommended to try it first. However, if it does not work or you are not satisfied with the quality, the [[Wikipedia:Open Sound System|Open Sound System]] is a viable alternative. OSSv4 has been released under a free license and is generally considered a significant improvement over the older OSSv3 which was replaced by ALSA. Instructions can be found in the [[OSS|OSS article]].
+
+If you have advanced audio requirements, take a look at [[Sound]] for an overview of various articles.
+
+==='''G'''raphical '''U'''ser '''I'''nterface===
+====Install X====
+The [[Wikipedia:X Window System|X Window System]] (commonly '''X11''', or '''X''') is a networking and display protocol which provides windowing on bitmap displays. It provides the standard toolkit and protocol to build graphical user interfaces (GUIs).
+
+{{Note|If you're installing Arch in a Virtualbox guest, you need a different way to complete X installation. See [[Arch_Linux_VirtualBox_Guest|Running Arch Linux as a guest]], then jump to the configuration part below.}}
+
+Now we will install the base '''[[Xorg]]''' packages using pacman.  This is the first step in building a GUI.
+
+Install the base packages:
+ # pacman -S xorg-server xorg-xinit xorg-utils xorg-server-utils
+
+Install [[Wikipedia:Mesa 3D (OpenGL)|mesa]] for 3D support:
+ # pacman -S mesa
+
+The 3D utilities glxgears and [http://dri.freedesktop.org/wiki/glxinfo glxinfo] are included in the '''mesa-demos''' package, install if needed:
+ # pacman -S mesa-demos
+
+====Install video driver====
+Next, you should install a driver for your graphics card.
+
+You will need knowledge of which video chipset your machine has. If you do not know, use the <code>/usr/sbin/lspci</code> program:
+ $ lspci
+
+{{Note| The '''vesa''' driver is the most generic, and should work with almost any modern video chipset. If you cannot find a suitable driver for your video chipset, vesa ''should'' work with any video card, but it offers only unaccelerated 2D performance.}}
+
+For a complete list of all '''open-source''' video drivers, search the package database:
+ $ pacman -Ss xf86-video | less
+
+{{Note|Proprietary drivers for NVIDIA and ATI are covered in the next sections. If you plan on doing heavy 3D processing such as gaming, consider using these.}}
+
+Use pacman to install the appropriate video driver for your video card/onboard video. Example for the Savage driver:
+ # pacman -S xf86-video-savage
+
+{{Tip|For some Intel graphics cards, configuration may be necessary to get proper 2D or 3D performance, see [[Intel]] for more information.}}
+
+=====NVIDIA Graphics Cards=====
+NVIDIA users have three options for drivers (in addition to the vesa driver):
+* The open-source nouveau driver, which offers fast 2d acceleration and experimental 3d support which is good enough for basic compositing (note: does not fully support powersaving yet). [http://nouveau.freedesktop.org/wiki/FeatureMatrix Feature Matrix.]
+* The open-source (but obfuscated) nv driver, which is very slow and only has 2d support.
+* The proprietary nvidia drivers, which offer good 3d performance and powersaving. Even if you plan on using the proprietary drivers, it is recommended to start with nouveau and then switch to the binary driver after you have X set up and working. Nouveau often works out-of-the-box, while nvidia will require configuration and likely some troubleshooting. See [[NVIDIA]] for more information.
+
+The open-source nouveau driver should be good enough for most users and is recommended:
+ # pacman -S xf86-video-nouveau
+
+Or, for 3D support (experimental):
+ # pacman -S nouveau-dri
+
+Create the file {{Filename|/etc/X11/xorg.conf.d/20-nouveau.conf}}, and input the following contents:
+ Section "Device"
+     Identifier "n"
+     Driver "nouveau"
+ EndSection
+
+This is required to ensure that nouveau driver is loaded. Xorg does not yet autoload nouveau.
+
+{{Tip|For advanced instructions, see [[Nouveau]].}}
+
+=====ATI Graphics Cards=====
+ATI owners have two options for drivers (in addition to the vesa driver):
+* The open source '''radeon''' driver provided by the '''xf86-video-ati''' package. See the [http://wiki.x.org/wiki/RadeonFeature radeon feature matrix] for details.
+* The proprietary '''fglrx''' driver provided by the [http://aur.archlinux.org/packages.php?O=0&K=catalyst&do_Search=Go catalyst] package located in the [[AUR]]. It supports only newer devices (HD2xxx and newer). It was once a package offered by Arch in the <code>extra</code> repository, but as of March 2009, official support has been dropped because of dissatisfaction with the quality and speed of development of the proprietary driver. See [[ATI Catalyst]] for more information.
+
+The open-source driver is the recommended choice. Install the '''radeon''' ATI Driver:
+ # pacman -S xf86-video-ati
+
+{{Tip|For advanced instructions, see [[ATI]].}}
+
+====Install input drivers====
+Udev should be capable of detecting your hardware without problems and evdev (xf86-input-evdev) is the modern, hotplugging input driver for almost all devices so in most cases, installing input drivers is not needed. At this point, evdev has already been installed as a dependency of Xorg.
+
+If evdev does not support your device, install the needed driver from the xorg-input-drivers group.
+
+For a complete list of available input drivers, invoke a pacman search:
+ # pacman -Ss xf86-input | less
+{{Note|You only need xf86-input-keyboard or xf86-input-mouse if you plan on disabling hotplugging, otherwise, evdev will act as the input driver.}}
+
+Laptop users (or users with a touchscreen) will also need the synaptics package to allow X to configure the touchpad/touchscreen:
+ # pacman -S xf86-input-synaptics
+
+{{Tip|For instructions on fine tuning or troubleshooting touchpad settings, see the [[Touchpad Synaptics]] article.}}
+
+====Configure X (Optional)====
+{{Warning|Proprietary drivers usually require a reboot after installation along with configuration. See [[NVIDIA]] or [[ATI Catalyst]] for details.}}
+
+X Server features auto-configuration and therefore can function without an xorg.conf. If you still wish to manually configure X Server, please see the [[Xorg]] wiki page.
+
+=====Non-US keyboard=====
+If you do not use a standard US keyboard you need to set the keyboard layout in {{Filename|/etc/X11/xorg.conf.d/10-evdev.conf}}:
+
+ Section "InputClass"
+     Identifier "evdev keyboard catchall"
+     MatchIsKeyboard "on"
+     MatchDevicePath "/dev/input/event*"
+     Driver "evdev"
+     '''Option "XkbLayout" "be"'''
+ EndSection
+
+{{Note|The '''XkbLayout''' key may differ from the keymap code you used with the km or loadkeys command. For instance, the uk layout corresponds to the key: '''gb'''. <!-- Where can the user find his/her key then? --Xgamer99 -->}}
+
+====Testing X====
+This section will explain how to start a very basic graphical environment in order to test '''X'''. This uses the simple default '''X''' window manager, twm.
+
+Install the default test environment:
+
+ # pacman -S xorg-twm xorg-xclock xterm
+
+The default X environment is rather bare. [[#Choose and install a graphical interface|This section below]] will deal with installing a desktop environment or window manager of your choice to supplement X.
+
+If you installed Xorg before creating your regular user, there will be an empty .xinitrc file in your $HOME that you need to either delete or edit in order to start a graphical environment. Simply deleting it will cause '''X''' to run with the default environment (twm, xclock, xterm).
+
+ $ rm ~/.xinitrc
+
+=====Message bus=====
+{{Note|<tt>dbus</tt> is likely required for many of your applications to work properly, if you know you do not need it, skip this section.}}
+
+Install dbus:
+ # pacman -S dbus
+
+{{Daemon|dbus}}
+
+=====Start X=====
+{{Note|The Ctrl-Alt-Backspace shortcut traditionally used to kill X has been deprecated and will not work to exit out of this test. You can enable Ctrl-Alt-Backspace by editing xorg.conf, as described [[Xorg#Ctrl-Alt-Backspace doesn't work|here]].}}
+
+Finally, start Xorg:
+ $ startx
+or
+ $ xinit -- /usr/bin/X -nolisten tcp
+
+A few movable windows should show up, and your mouse should work. Once you are satisfied that '''X''' installation was a success, you may exit out of '''X''' by issuing the <tt>exit</tt> command into the prompts until you return to the console.
+
+If the screen goes black, you may still attempt to switch to a different virtual console (CTRL-Alt-F2, for example), and login blindly as root, followed by <Enter>, followed by root's password followed by <Enter>.
+
+You can attempt to kill the '''X''' server with <code>/usr/bin/pkill</code> (note the capital letter '''X'''):
+ # pkill X
+
+If pkill does not work, reboot blindly with:
+ # reboot
+
+=====In case of errors=====
+If a problem occurs, look for errors in {{Filename|/var/log/Xorg.0.log}}. Be on the lookout for any lines beginning with {{Codeline|(EE)}} which represent errors, and also {{Codeline|(WW)}} which are warnings that could indicate other issues.
+ $ grep EE /var/log/Xorg.0.log
+
+Errors may also be searched for in the console output of the virtual console from which '''X''' was started.
+
+See the [[Xorg]] article for detailed instructions and troubleshooting.
+
+=====Need Help?=====
+If you are still having trouble after consulting the [[Xorg]] article and need assistance via the Arch forums, be sure to install and use wgetpaste:
+
+ # pacman -S wgetpaste
+Use wgetpaste and provide links for the following files when asking for help in your forum post:
+* ~/.xinitrc
+* /etc/X11/xorg.conf
+* /var/log/Xorg.0.log
+* /var/log/Xorg.0.log.old
+Use wgetpaste like so:
+ $ wgetpaste </path/to/file>
+Post the corresponding links given within your forum post. Be sure to provide appropriate hardware and driver information as well.
+{{Warning|It is very important to provide detail when troubleshooting X. Please provide all pertinent information as detailed above when asking for assistance on the Arch forums.}}
+
+====Install Fonts====
+At this point, you may wish to save time by installing visually pleasing, true type fonts, before installing a desktop environment/window manager. DejaVu is a set of high quality, general-purpose fonts.
+
+Install with:
+ # pacman -S ttf-dejavu
+
+Refer to [[Font Configuration]] for how to configure font rendering and [[Fonts]] for font suggestions and installation instructions.
+
+====Choose and install a graphical interface====
+The X Window System provides the basic framework for building a graphical user interface (GUI).
+
+{{Note|Choosing your DE or WM is a very subjective and personal decision. Choose the best environment for ''your'' needs.}}
+
+;Window Manager (WM) : Controls the placement and appearance of application windows in conjunction with the X Window System. '''See [[Window Manager#Window managers|Window managers]] for more information.'''
+
+;Desktop Environment (DE): Works atop and in conjunction with X, to provide a completely functional and dynamic GUI. A DE typically provides a window manager, icons, applets, windows, toolbars, folders, wallpapers, a suite of applications and abilities like drag and drop.'''See [[Desktop Environment#Desktop environments|Desktop environments]] for more information.'''
+
+{{Note|You can build your own DE by using a WM and the applications of your choice.}}
+
+After installing a graphical interface, you may wish to continue with [[General Recommendations]] for post-installation instructions.
+
+====Methods for starting your Graphical Environment====
+=====Manually=====
+You might prefer to start X manually from your terminal rather than booting straight into the desktop. For DE-specific commands, please see the wiki page corrosponding to your DE for more information. For more generic '''X''' commands, please see the [[Xorg#Methods for starting your Graphical Environment|section on the Xorg page]].
+
+=====Automatically=====
+You might prefer to have the desktop start automatically during boot instead of starting X manually. See [[Display Manager]] for instructions on using a login manager or [[Start X at Boot]] for two lightweight methods that do not rely on a display manager.<noinclude>
+
+{{Beginners' Guide navigation}}
+</noinclude>
+

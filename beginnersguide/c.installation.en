@@ -1,0 +1,595 @@
+==Install the Base System==
+As root, run the installer script from tty1:
+ # /arch/setup
+You should next see the displayed Arch Linux Installation Framework screen.
+
+===Select an installation source===
+After a welcome screen, you will be prompted for an installation source. Choose the appropriate source for the installer you are using.  If using a Netinstall image, relative speed and update status of source repository mirrors may be checked [https://www.archlinux.de/?page=MirrorStatus here].
+
+* If you chose the CORE installer and wish to use the packages on the CD, select CD-ROM as source
+* Alternatively, or if you're using the Netinstall installation media, select NET and see section below ([[#Configure Network (Netinstall)|Configure Network]]).
+
+====Configure Network (Netinstall)====
+You shall be prompted to load ethernet drivers manually, if desired. Udev is quite effective at loading the required modules, so you may assume it has already done so. At the next screen, select ''Setup Network''. You may verify this by pressing <Alt>+F3 and invoking ifconfig -a. When done, return to tty1 by pressing <Alt>+F1
+
+Available Interfaces will be presented. If an interface and HWaddr ('''H'''ard'''W'''are '''addr'''ess) is listed, then your module has already been loaded. If your interface is not listed, you may probe it from the installer, or manually do so from another virtual console. Select your interface to continue.
+
+The installer will then ask if you wish to use DHCP. Choosing Yes will run '''dhcpcd''' to discover an available gateway and request an IP address; Choosing No will prompt you for your static IP, netmask, broadcast, gateway DNS IP, HTTP proxy, and FTP proxy. Afterwards, you will be returned to the ''Net Installation Menu''
+
+Select ''Choose Mirror'' and select an FTP/HTTP mirror.  When finished, return to main menu.
+
+{{Note|archlinux.org is throttled to 50KB/s}}
+
+=====(A)DSL Quickstart for the Live Environment=====
+(If you have a modem or router in bridge mode to connect to your ISP)
+
+Switch to another virtual console (<Alt> + F2), login as root and invoke
+ # pppoe-setup
+If everything is well configured in the end you can connect  to your ISP with
+ # pppoe-start
+
+Return to first virtual console  with <ALT>+F1. Continue with [[#Set_Clock|Set Clock]]
+
+=====Wireless Quickstart For the Live Environment=====
+(If you need wireless connectivity during the installation process)
+
+The wireless drivers and utilities are now available to you in the live environment of the installation media. A good knowledge of your wireless hardware will be of key importance to successful configuration. Note that the following quickstart procedure ''executed at this point in the installation'' will initialize your wireless hardware for use ''in the live environment of the installation media''. These steps (or some other form of wireless management) must be repeated from the actual installed system after booting into it.
+
+Also note that these steps are optional if wireless connectivity is unnecessary at this point in the installation; wireless functionality may always be established later.
+
+{{Note|The following examples use wlan0 for the interface and 'linksys' for the ESSID. Remember to change these for your situation.}}
+
+The basic procedure will be:
+* Switch to a free virtual console, e.g.: <ALT>+F3
+* Login as root
+* (Optional) Identify the wireless interface:
+ # lspci | grep -i net
+* Ensure udev has loaded the driver, and that the driver has created a usable wireless kernel interface with <code>/usr/sbin/iwconfig</code>:
+
+{{Command|iwconfig|<nowiki> lo no wireless extensions.
+ eth0 no wireless extensions.
+ wlan0    unassociated  ESSID:""
+          Mode:Managed  Channel=0  Access Point: Not-Associated
+          Bit Rate:0 kb/s   Tx-Power=20 dBm   Sensitivity=8/0
+          Retry limit:7   RTS thr:off   Fragment thr:off
+          Power Management:off
+          Link Quality:0  Signal level:0  Noise level:0
+          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+          Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+</nowiki>|prompt=#}}
+<code>wlan0</code> is the available wireless interface in this example. 
+
+{{Note|If you do not see output similar to this, then your wireless driver has not been loaded. If this is the case, you must load the driver yourself. Please see [[Wireless Setup]] for more detailed information.}}
+
+* Bring the interface up with <code>/sbin/ifconfig <interface> up</code>.
+ # ifconfig wlan0 up
+
+A small percentage of wireless chipsets also require firmware, in addition to a corresponding driver. If the wireless chipset requires firmware, you are likely to receive this error when bringing the interface up:
+
+{{Command|ifconfig wlan0 up|SIOCSIFFLAGS: No such file or directory|prompt=#}}
+
+If unsure, invoke <code>/usr/bin/dmesg</code> to query the kernel log for a firmware request from the wireless chipset. Example output from an Intel chipset which requires and has requested firmware from the kernel at boot:
+
+{{Command|<nowiki>dmesg | grep firmware</nowiki>|firmware: requesting iwlwifi-5000-1.ucode}}
+
+If there is no output, it may be concluded that the system's wireless chipset does not require firmware.
+
+{{Note | Wireless chipset firmware packages (for cards which require them) are pre-installed under /lib/firmware in the live environment (on CD/USB stick) '''but must be explicitly installed to your actual system to provide wireless functionality after you reboot into it!''' Package selection and installation is covered later in this guide. Ensure installation of both your wireless module and firmware during the package selection step! See [[Wireless Setup]] if you are unsure about the requirement of corresponding firmware installation for your particular chipset. This is a very common error.}}
+
+* If the ESSID has been forgotten or is unknown, use <code>/sbin/iwlist <interface> scan</code> to scan for nearby networks.
+ # iwlist wlan0 scan
+<nowiki></nowiki> 
+ 
+* If using WPA encryption:
+
+Using WPA encryption requires that the key be encrypted and stored in a file, along with the ESSID, to be used later for connection via <code>wpa_supplicant</code>. Thus, a few extra steps are required:
+
+For the purpose of simplifying and backup, rename the default wpa_supplicant.conf file:
+ # mv /etc/wpa_supplicant.conf /etc/wpa_supplicant.conf.original
+
+Using <code>wpa_passphrase</code>, provide your wireless network name and WPA key to be encrypted and written to /etc/wpa_supplicant.conf
+
+The following example encrypts the key 'my_secret_passkey' of the 'linksys' wireless network, generates a new configuration file (<file>/etc/wpa_supplicant.conf</file>), and subsequently redirects the encrypted key, writing it to the file:
+ # wpa_passphrase linksys "my_secret_passkey" > /etc/wpa_supplicant.conf
+
+Check [[WPA Supplicant]] for more information and troubleshooting.
+
+{{Note|/etc/wpa_supplicant.conf is stored in plain text format. This is not risky in the installation environment, but when you reboot into your new system and reconfigure WPA, remember to change the permissions on /etc/wpa_supplicant.conf (e.g. <tt>chmod 0600 /etc/wpa_supplicant.conf</tt> to make it readable by root only).}}
+
+* Associate your wireless device with the access point you want to use. Depending on the encryption (none, WEP, or WPA), the procedure may differ. You need to know the name of the chosen wireless network (ESSID).
+
+{| border="1"
+! Encryption || Command
+|-
+| No Encryption || <code>iwconfig wlan0 essid "linksys"</code>
+|-
+| WEP w/ Hex Key || <code>iwconfig wlan0 essid "linksys" key "0241baf34c"</code>
+|-
+| WEP w/ ASCII passphrase || <code>iwconfig wlan0 essid "linksys" key "s:pass1"</code>
+|-
+| WPA || <code>wpa_supplicant -B -Dwext -i wlan0 -c /etc/wpa_supplicant.conf</code>
+|}
+
+{{Note | The network connection process may be automated later by using the default Arch network daemon,  [[netcfg]], [[wicd]], or another network manager of your choice.}}
+
+* After utilizing the appropriate association method outlined above, wait a few moments and confirm you have successfully associated to the access point before continuing. e.g.:
+ # iwconfig wlan0
+Output should indicate the wireless network is associated with the interface.
+* Request an IP address with <code>/sbin/dhcpcd <interface> </code>. e.g.:
+ # dhcpcd wlan0
+* Lastly, ensure you can route using <code>/bin/ping</code>:
+ # ping -c 3 www.google.com
+
+You should have a working network connection. For troubleshooting, check the detailed [[Wireless Setup]] page.
+
+Return to tty1 with <ALT>+F1. Continue with [[#Set Clock|Set Clock]]
+
+===Set Clock===
+Set the hardware clock. If this doesn't match the setting of your other operating systems, they will overwrite the time and cause clock shifts (which can cause time drift correction to be miscalibrated).
+* [[Wikipedia:Coordinated Universal Time|UTC]] (recommended)
+* '''localtime''' (highly discouraged) - Used by default in Windows, but Windows can be told to use UTC. If time is set to localtime, DST shifts will not be made by linux. Using ''localtime'' may lead to several known and unfixable bugs. However, there are no plans to drop support for ''localtime''.
+{{Note|Any other value will result in the hardware clock being left untouched (useful for virtualization).}}
+
+===Prepare Hard Drive===
+
+{{Warning|Partitioning hard drives can destroy data. You are strongly cautioned and advised to backup your critical data if applicable.}}
+
+{{Note|Partitioning may be performed before initiating the Arch installation if desired, by utilizing [http://gparted.sourceforge.net/download.php GParted] or other available tools. If the installation drive has already been partitioned to the required specifications, continue with [[#Set Filesystem Mountpoints| Set Filesystem Mountpoints]]}}
+
+Verify current disk identities and layout by invoking <code>/sbin/fdisk</code> with the <code>-l</code> (lower-case L) switch.
+
+Open another virtual console (<ALT>+F3) and enter:
+ # fdisk -l
+Take note of the disk(s)/partition(s) to utilize for the Arch installation.
+
+Switch back to the installation script with <ALT>+F1
+
+Select the first menu entry &quot;Prepare Hard Drive&quot;.
+* Option 1: Auto-Prepare (Erases an ENTIRE hard drive and sets up partitions)
+Auto-Prepare divides the disk into the following configuration:
+
+* ext2 /boot partition, default size 32MB. ''You will be prompted to modify the size to your requirement.''
+* swap partition, default size 256MB. ''You will be prompted to modify the size to your requirement.''
+* A Separate / and /home partition, (sizes can also be specified). Available filesystems include ext2, ext3, ext4, reiserfs, xfs and jfs, but note that ''both / and /home shall share the same fs type'' if choosing the Auto Prepare option.
+
+Be warned that Auto-prepare will completely erase the chosen hard drive. Read the <font color="red">warning</font> presented by the installer very carefully, and make sure the correct device is about to be partitioned.
+
+* Option 2: Manually Partition Hard Drives (with cfdisk)- recommended.
+
+This option will allow for the most robust and customized partitioning solution for your personal needs.
+
+* Option 3: Manually Configure block devices, filesystems and mountpoints
+If this is selected, the system will list what filesystems and mountpoints it has found and ask you if you wish to use these.  If selecting "Yes", you will be given a choice to select the desired method of identification, ie. by dev, label or uuid.
+
+* Option 4: Rollback last filesystem changes
+
+''At this point, more advanced GNU/Linux users who are familiar and comfortable with manually partitioning may wish to skip down to '''[[#Select Packages|Select Packages]]''' below.''
+
+{{Note|If you are installing to a USB flash key, see "[[Installing Arch Linux on a USB key]]".}}
+
+====Partition Hard Drives====
+
+=====Partition Type=====
+
+Partitioning a hard disk drive defines specific areas (the partitions) within the disk, that will each appear and behave as a separate disk and upon which a filesystem may be created (formatted).
+
+There are 3 types of disk partitions:
+*Primary
+*Extended
+**Logical
+'''Primary''' partitions can be bootable, and are limited to 4 partitions per disk or raid volume. If a partitioning scheme requires more than 4 partitions, an '''extended''' partition which will contain '''logical''' partitions will be required.
+
+Extended partitions are not usable by themselves; they are merely a &quot;container&quot; for logical partitions. If required, a hard disk shall contain only one extended partition; which shall then be sub-divided into logical partitions.
+
+When partitioning a disk, one can observe this numbering scheme by creating primary partitions sda1 through sda3 followed by creating an extended partition, sda4, and subsequently creating logical partition(s) within the extended partition; sda5, sda6, and so on.
+
+=====Swap Partition=====
+A swap partition is a place on the drive where virtual RAM resides, allowing the kernel to easily use disk storage for data that does not fit into physical RAM.
+
+Historically, the general rule for swap partition size was 2x the amount of physical RAM. Over time, as computers have gained ever larger memory capacities, this rule has become increasingly deprecated. Generally, on machines with up to 512MB RAM, the 2x rule is usually quite sufficient. If the installation machine provides gratuitous amounts of RAM (more than 1024 MB) it may be possible to completely forget a swap partition altogether, since the option to create a [[HOW TO: Create swap file|swap file]] is always available later. A 1 GB swap partition will be used in this example.
+{{Note|If using suspend-to-disk, (hibernate) a swap partition at least '''equal''' in size to the amount of physical RAM is required. Some Arch users even recommend oversizing it beyond the amount of physical RAM by 10-15%, to allow for possible bad sectors.}}
+
+=====Partition Scheme=====
+A disk partitioning scheme is a very personalized preference. Each user's choices will be unique to their own computing habits and requirements. If you would like to dual boot Arch Linux and a Windows operating system please see [[Windows and Arch Dual Boot]].
+
+Filesystem candidates for separate partitions include:
+
+'''/'''     (root) ''The root filesystem is the primary filesystem from which all other filesystems stem; the top of the hierarchy. All files and directories appear under the root directory &quot;/&quot;, even if they are stored on different physical devices. The contents of the root filesystem must be adequate to boot, restore, recover, and/or repair the system. Therefore, certain directories under / are not themselves candidates for separate partitions. (See warning below).''
+
+'''/boot''' ''This directory contains the kernel and ramdisk images as well as the bootloader configuration file, and bootloader stages. /boot also stores data that is used before the kernel begins executing userspace programs. This may include saved master boot sectors and sector map files. /boot is essential for booting, but is unique in that it may still be kept on its own separate partition (if required).''
+
+'''/home''' ''Provides subdirectories, each named for a system user, for miscellaneous personal data storage as well as user-specific configuration files for applications.''
+
+'''/usr'''  ''While root is the primary filesystem, /usr is the secondary hierarchy for all system users' data, including the majority of multi-user utilities and applications. /usr is shareable, read-only data. This means that /usr shall be shareable between various hosts and must not be written to, except in the case of system update/upgrade. Any information that is host-specific or varies with time is stored elsewhere.''
+
+{{Warning|A separate /usr partition will cause some silent failures in udev and will break [[systemd]]. [http://freedesktop.org/wiki/Software/systemd/separate-usr-is-broken source]}}
+
+'''/tmp'''  ''directory for programs that require temporary files such as '.lck' files, which can be used to prevent multiple instances of their respective program until a task is completed, at which point the '.lck' file will be removed. Programs must not assume that any files or directories in /tmp are preserved between invocations of the program and files and directories located under /tmp will typically be deleted whenever the system is booted.''
+
+'''/var''' ''contains variable data; spool directories and files, administrative and logging data, pacman's cache, the ABS tree, etc. /var exists in order to make it possible to mount /usr as read-only. Everything that historically went into /usr that is written to during system operation (as opposed to installation and software maintenance) must reside under /var.''
+{{Warning | Besides /boot, directories essential for booting are: ''''''/bin', '/etc', '/lib', and '/sbin'. Therefore, they must not reside on a separate partition from /.'''''}}
+'''''There are several advantages for using discrete filesystems, rather than combining all into one partition''''':
+
+* Security: Each filesystem may be configured in /etc/fstab as 'nosuid', 'nodev', 'noexec', 'readonly', etc.
+* Stability: A user, or malfunctioning program can completely fill a filesystem with garbage if they have write permissions for it. Critical programs, which reside on a different filesystem remain unaffected.
+* Speed: A filesystem which gets written to frequently may become somewhat fragmented. (An effective method of avoiding fragmentation is to ensure that each filesystem is never in danger of filling up completely.) Separate filesystems remain unaffected, and each can be defragmented separately as well.
+* Integrity: If one filesystem becomes corrupted, separate filesystems remain unaffected.
+* Versatility: Sharing data across several systems becomes more expedient when independent filesystems are used. Separate filesystem types may also be chosen based upon the nature of data and usage.
+In this example, we shall use separate partitions for /, /var, /home, and a swap partition.
+
+{{Note | /var contains many small files. This should be taken into consideration when choosing a filesystem type for it, (if creating its own separate partition).}}
+
+=====How big should my partitions be?=====
+This question is best answered based upon individual needs.
+You may wish to simply create '''one partition for root and one partition for swap or only one root partition without swap''' or refer to the following examples and consider these guidelines to provide a frame of reference:
+* The root filesystem (/) in the example will contain the /usr directory, which can become moderately large, depending upon how much software is installed.  15-20 GB should be sufficient for most users.
+
+* The /var filesystem will contain, among other data, the [[ABS]] tree and the pacman cache. Keeping cached packages is useful and versatile; it provides the ability to downgrade packages if needed. /var tends to grow in size; the pacman cache can grow large over long periods of time, but can be safely cleared if needed.  If you are using an SSD, you may wish to locate your /var on an HDD and keep the / and /home partitions on your SSD to avoid needless read/writes to the SSD.  8-12 Gigs on a desktop system should be sufficient for /var, depending largely upon how much software you intend to install. Servers tend to have relatively larger /var filesystems.
+
+* The /home filesystem is typically where user data, downloads, and multimedia reside. On a desktop system, /home is typically the largest filesystem on the drive by a large margin.  Remember that if you chose to reinstall Arch, all the data on your /home partition will be untouched (so long as you have a separate /home partition).
+
+* An extra 25% of space added to each filesystem will provide a cushion for unforeseen occurrence, expansion, and serve as a preventive against fragmentation.
+'''''From the guidelines above, the example system shall contain a ~15GB root (/) partition, ~10GB /var, 1GB swap, and a /home containing the remaining disk space.'''''
+
+=====Create Partitions with cfdisk=====
+Start by creating the primary partition that will contain the '''root''', (/) filesystem.
+
+Choose '''N'''ew -> Primary and enter the desired size for root (/). Put the partition at the beginning of the disk.
+
+Also choose the '''T'''ype by designating it as '83 Linux'. The created / partition shall appear as sda1 in our example.
+
+Now create a primary partition for /var, designating it as '''T'''ype 83 Linux. The created /var partition shall appear as sda2
+
+Next, create a partition for swap. Select an appropriate size and specify the '''T'''ype as 82 (Linux swap / Solaris). The created swap partition shall appear as sda3.
+
+Lastly, create a partition for your /home directory. Choose another primary partition and set the desired size.
+
+Likewise, select the '''T'''ype as 83 Linux. The created /home partition shall appear as sda4.
+
+Example:
+
+ Name    Flags     Part Type    FS Type           [Label]         Size (MB)
+ -------------------------------------------------------------------------
+ sda1               Primary     Linux                             15440 #root
+ sda2               Primary     Linux                             10256 #/var
+ sda3               Primary     Linux swap / Solaris              1024  #swap
+ sda4               Primary     Linux                             140480 #/home
+
+Choose '''W'''rite and type ''''yes''''. Beware that this operation may destroy data on your disk. Choose '''Q'''uit to leave the partitioner.
+Choose Done to leave this menu and continue with &quot;Set Filesystem Mountpoints&quot;.
+
+{{Note | Since the latest developments of the Linux kernel which include the libata and PATA modules, all IDE, SATA and SCSI drives have adopted the sd''x'' naming scheme. This is perfectly normal and should not be a concern.}}
+
+====Set Filesystem Mountpoints====
+Specify each partition and corresponding mountpoint to your requirements. (Recall that partitions end in a number. Therefore, '''sda''' is not itself a partition, but rather, signifies an entire drive)
+
+=====Filesystem Types=====
+Again, a filesystem type is a very subjective matter which comes down to personal preference. Each has its own advantages, disadvantages, and unique idiosyncrasies. Here is a very brief overview of supported filesystems:
+
+1. [[Wikipedia:ext2|ext2]] ''Second Extended Filesystem''- Old, mature GNU/Linux filesystem. Very stable, but ''without journaling support'' or barriers, which can result in data loss in a power loss or system crash. May be inconvenient for root (/) and /home, due to very long fsck's. ''An ext2 filesystem can easily be converted to ext3.''
+
+2. [[Wikipedia:ext3|ext3]] ''Third Extended Filesystem''- Essentially the ext2 system, but with journaling support and write barriers. ext3 is backward compatible with ext2. Extremely stable and mature.
+
+3. [[Wikipedia:ext4|ext4]] ''Fourth Extended Filesystem''- Backward compatible with ext2 and ext3. Introduces support for volumes with sizes up to 1 exabyte and files with sizes up to 16 terabytes. Increases the 32,000 subdirectory limit in ext3 to 64,000. Offers online defragmentation ability.
+
+4. [[Wikipedia:ReiserFS|ReiserFS]] (V3)- Hans Reiser's high-performance journaling FS uses a very interesting method of data throughput based on an unconventional and creative algorithm. ReiserFS is touted as very fast, especially when dealing with many small files. ReiserFS is fast at formatting, yet comparatively slow at mounting. Quite mature and stable. ReiserFS (V3) is not actively developed at this time. Generally regarded as a good choice for /var/.
+
+5. [[Wikipedia:JFS (file system)|JFS]] - IBM's '''J'''ournaled '''F'''ile'''S'''ystem- The first filesystem to offer journaling. JFS had many years of use in the IBM AIX® OS before being ported to GNU/Linux. JFS currently uses the least CPU resources of any GNU/Linux filesystem. Very fast at formatting, mounting and fsck's, and very good all-around performance, especially in conjunction with the deadline I/O scheduler. (See [[JFS]].) Not as widely supported as ext or ReiserFS, but very mature and stable.
+
+6. [[Wikipedia:XFS|XFS]] - Another early journaling filesystem originally developed by Silicon Graphics for the IRIX OS and ported to GNU/Linux. XFS offers very fast throughput on large files and large filesystems. Very fast at formatting and mounting. Generally benchmarked as slower with many small files, in comparison to other filesystems. XFS is very mature and offers online defragmentation ability.
+
+7. [[Wikipedia:Btrfs|Btrfs]] - Also known as "Better FS" is a new filesystem with substantial new and powerful features similar to Sun/Oracle's excellent [[Wikipedia:ZFS|ZFS]]. These include snapshots, multi-disk striping and mirroring (basically software raid without mdadm), checksums, incremental backup, and on-the-fly compression (which can give a significant performance boost as well as save space), and more. It is still considered "unstable" as of January 2011, but has been merged into the mainline kernel under experimental status. Btrfs looks to be the future of linux filesystems, and is now offered as a root filesystem choice in all major distribution installers.
+
+{{Warning|Brtfs has no fsck utility yet, so if any corruption occurs you cannot repair the filesystem.}}
+
+* JFS and XFS filesystems cannot be ''shrunk'' by disk utilities (such as gparted or parted magic)
+
+===== A note on Journaling=====
+All above filesystems, except ext2, utilize [http://en.wikipedia.org/wiki/Journaling_file_system journaling]. Journaling file systems are fault-resilient file systems that use a journal to log changes before they are committed to the file system to avoid metadata corruption in the event of a crash. Note that not all journaling techniques are alike; specifically, only ext3 and ext4 offer ''data-mode journaling'', (though, not by default), which journals ''both'' data ''and'' meta-data (but with a significant speed penalty). The others only offer ''ordered-mode journaling'', which journals meta-data only. While all will return your filesystem to a valid state after recovering from a crash, ''data-mode journaling'' offers the greatest protection against file system corruption and data loss but can suffer from performance degradation, as all data is written twice (first to the journal, then to the disk).  Depending upon how important your data is, this may be a consideration in choosing your filesystem type.
+
+'''''Moving on...'''''
+
+Choose and create the filesystem (format the partition) for / by selecting '''yes'''. You will now be prompted to add any additional partitions. In our example, sda2 and sda4 remain. For sda2, choose a filesystem type and mount it as /var. Finally, choose the filesystem type for sda4, and mount it as /home.
+{{Box Note |If you have not created and do not need a separate /boot partition, you may safely ignore the warning that it does not exist.}} Return to the main menu.
+
+===Select Packages===
+
+All packages during installation are from the [core] repository. They are further divided into '''Base''', and '''Base-devel'''. Package information and brief descriptions are available [http://www.archlinux.org/packages/?repo=Core&arch=i686&limit=all&sort=pkgname here].
+
+First, select the package category:
+{{Note | For expedience, all packages in '''base''' are selected by default. Use the space-bar to select and de-select packages.}}
+; Base : Packages from the [core] repo to provide the minimal base environment. Always select this and only remove packages that will not be used.
+; Base-devel : Extra tools from [core] such as <code>make</code>, and <code>automake</code>. Most beginners should choose to install it, as many will probably need it later.
+
+After category selection, you will be presented with the full lists of packages, allowing you to fine-tune your selections. Use the space bar to select and unselect.
+
+{{Note | If connection to a wireless network is required, remember to select and install the '''wireless_tools''' package. Some wireless interfaces also need [[Wireless_Setup#ndiswrapper|'''ndiswrapper''']] and/or a specific [[Wireless_Setup#Drivers_and_firmware|'''firmware''']]. If you plan to use WPA encryption, you will need [[WPA_Supplicant|'''wpa_supplicant''']]. The [[Wireless_Setup|Wireless Setup]] page will help you choose the correct packages for your wireless device. Also strongly consider installing [[Netcfg|'''netcfg''']], which will help you set up your network connection and profiles after you reboot into your new system.}}
+
+After selecting the needed packages, leave the selection screen and continue to the next step, '''Install Packages'''.
+
+===Install Packages===
+
+''Install Packages'' will install the selected packages to your new system.  If you selected a CD/USB as the source, package versions from the CD/USB will be installed. If you opted for a Netinstall, fresh packages will be downloaded from the internet and installed.
+
+{{Note|In some installers, you will be asked if you wish to keep the packages in the pacman cache. If you choose 'yes', you will have the flexibility to [[Downgrade packages|downgrade]] to previous package versions in the future, so this is recommended (you can always clear the cache in the future).}}
+
+After the packages have been downloaded, the installer will check their integrity.  Next it will create the kernel from the packages downloaded.
+
+===Configure the System===
+{{Tip|Closely following and understanding these steps is of key importance to ensure a properly configured system.}}
+
+At this stage of the installation, you will configure the primary configuration files of your Arch Linux base system. Previous versions of the installer included [[Hwdetect|hwdetect]] to gather information for your configuration. This has been deprecated and replaced with '''[[Udev|udev]]''', which should handle most module loading automatically at boot.
+
+Now you will be asked which text editor you want to use; choose [[Nano|nano]], [http://joe-editor.sourceforge.net/ joe] or [[Vim|vi]]. <tt>nano</tt> is generally considered the easiest of the three. Please see the releated wiki pages of the editor you wish to use for instructions on how to use them. You will be presented with a menu including the main configuration files for your system.
+
+{{Note|It is very important at this point to edit, or at least verify by opening, every configuration file. The installer script relies on your input to create these files on your installation. A common error is to skip over these critical steps of configuration.}}
+
+'''Can the installer handle this more automatically?'''
+
+Hiding the process of system configuration is in direct opposition to '''''[[The Arch Way]]'''''. While it is true that recent versions of the kernel and hardware probing tools offer excellent hardware support and auto-configuration, Arch presents the user all pertinent configuration files during installation for the purposes of ''transparency and system resource control''. By the time you have finished modifying these files to your specifications, you will have learned the simple method of manual Arch Linux system configuration and become more familiar with the base structure, leaving you better prepared to use and maintain your new installation productively.
+
+====/etc/rc.conf====
+Arch Linux uses the file {{Filename|/etc/rc.conf}} as the principal location for system configuration. This one file contains a wide range of configuration information, principally used at system startup. As its name directly implies, it also contains settings for and invokes the /etc/rc* files, and is, of course, sourced ''by'' these files.
+
+----
+
+=====LOCALIZATION section=====
+
+<div style='float:right;margin: 0 0 0 0.5em'>
+<div style='text-align:center;'>'''''Example for LOCALIZATION:'''''</div>
+ LOCALE=&quot;en_US.utf8&quot;
+ HARDWARECLOCK=&quot;localtime&quot;
+ USEDIRECTISA=&quot;no&quot;
+ TIMEZONE=&quot;US/Eastern&quot;
+ KEYMAP=&quot;us&quot;
+ CONSOLEFONT=
+ CONSOLEMAP=
+ USECOLOR=&quot;yes&quot;
+</div>
+:; LOCALE : This sets your system locale, which will be used by all i18n-aware applications and utilities. You can get a list of the available locales by running {{Codeline|locale -a}} from the command line. This setting's default is usually fine for US English users. However if you experience any problems such as some characters not printing right and being replaced by squares you may want to go back and replace &quot;en_US.utf8&quot; with just &quot;en_US&quot;.
+:; HARDWARECLOCK : Specifies whether the hardware clock, which is synchronized on boot and on shutdown, stores '''UTC''' time, or '''localtime'''. UTC makes sense because it greatly simplifies changing timezones and daylight savings time. localtime is necessary if you dual boot with an operating system such as Windows, that only stores localtime to the hardware clock.
+:; USEDIRECTISA : Use direct I/O request instead of {{Filename|/dev/rtc}} for hwclock
+:; TIMEZONE : Specify your TIMEZONE. (All available zones are under {{Filename|/usr/share/zoneinfo/}}).
+:; KEYMAP :  The available keymaps are in {{Filename|/usr/share/kbd/keymaps}}. Please note that this setting is only valid for your TTYs, not any graphical window managers or '''X'''.
+:; CONSOLEFONT : Available console fonts reside under {{Filename|/usr/share/kbd/consolefonts/}} if you must change. The default (blank) is safe.
+:; CONSOLEMAP : Defines the console map to load with the setfont program at boot. Possible maps are found in {{Filename|/usr/share/kbd/consoletrans}}, if needed. The default (blank) is safe.
+:; USECOLOR : Select &quot;yes&quot; if you have a color monitor and wish to have colors in your consoles.
+
+----
+
+=====HARDWARE Section=====
+
+<div style='float:right;margin: 0 0 0 0.5em'>
+<div style='text-align:center;'>'''''Example for HARDWARE:'''''</div>
+ # Scan hardware and load required modules at boot
+ MOD_AUTOLOAD=&quot;yes&quot;
+ # Module Blacklist - Deprecated
+ MOD_BLACKLIST=()
+ #
+ MODULES=(!net-pf-10 !pcspkr loop)
+</div>
+:; MOD_AUTOLOAD : Setting this to &quot;yes&quot; will use '''udev''' to automatically probe hardware and load the appropriate modules during boot, (convenient with the default modular kernel). Setting this to &quot;no&quot; will rely on the user's ability to specify this information manually, or compile their own custom kernel and modules, etc.
+:; MOD_BLACKLIST : This has become deprecated in favor of adding blacklisted modules directly to the '''MODULES=''' line below.
+:; MODULES : Specify additional MODULES if you know that an important module is missing. If your system has any floppy drives, add "floppy". If you will be using loopback filesystems, add "loop". Also specify any blacklisted modules by prefixing them with a bang (!). Udev will be forced NOT to load blacklisted modules. In the example, the IPv6 module as well as the annoying pcspeaker are blacklisted.
+
+----
+
+=====NETWORKING Section=====
+:; HOSTNAME :Set your HOSTNAME to your liking. This is the name of your computer. Whatever you put here, also put it in {{filename|/etc/hosts}}
+:; eth0 : 'Ethernet, card 0'. ''If'' you are using '''static IP''', adjust the interface IP address, netmask and broadcast address. Set eth0=&quot;dhcp&quot; if you want to use '''DHCP''' for dynamic/automatic configuration.
+:; INTERFACES : Specify all interfaces here. Multiple interfaces should be separated with a space as in: (eth0 wlan0)
+:; gateway : If you are using '''static IP''', set the gateway address. If using  '''DHCP''', you can usually ignore this variable, though some users have reported the need to define it.
+:; ROUTES : If you are using static '''IP''', remove the '''!''' in front of 'gateway'. If using  '''DHCP''', you can usually leave this variable commented out with the bang (!), but again, some users require the gateway and ROUTES defined. If you experience networking issues with pacman, for instance, you may want to return to these variables.
+
+'''Example w/ Dynamic IP (''DHCP''):'''
+ HOSTNAME="arch"
+ #eth0="eth0 192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255"
+ eth0="dhcp"
+ INTERFACES=(eth0)
+ gateway="default gw 192.168.0.1"
+ ROUTES=(!gateway)
+
+'''Example w/ Static IP:'''
+ HOSTNAME="arch"
+ eth0="eth0 192.168.0.2 netmask 255.255.255.0 broadcast 192.168.0.255"
+ INTERFACES=(eth0)
+ gateway="default gw 192.168.0.1"
+ ROUTES=(gateway)
+
+When using a static IP, modify {{Filename|/etc/resolv.conf}} to specify the DNS servers of choice. Please see the [[#/etc/resolv.conf|section below]] regarding this file.
+
+{{Note|Remember, connecting to a wireless network automatically requires a few more steps and may require you to set up a network manager such as [[netcfg]] or [[wicd]]. Please see the [[Wireless Setup#Part II: Wireless management|Wireless Setup]] page for more information}}
+{{Tip|If using a non-standard MTU size (a.k.a. jumbo frames) is desired AND the installation machine hardware supports them, see the [[Jumbo Frames]] wiki article for further configuration.}}
+
+----
+
+=====DAEMONS Section=====
+This array simply lists the names of those scripts contained in /etc/rc.d/ which are to be started during the boot process, and the order in which they start. Asynchronous initialization by backgrounding is also supported and useful for speeding up boot.
+ DAEMONS=(network @syslog-ng netfs @crond)
+*If a script name is prefixed with a bang (!), it is not executed.
+*If a script is prefixed with an &quot;at&quot; symbol (@), it shall be executed in the background; the startup sequence will not wait for successful completion of each daemon before continuing to the next. (Useful for speeding up system boot). Do not background daemons that are needed by other daemons. For example "mpd" depends on "network", therefore backgrounding network may cause mpd to break.
+*Edit this array whenever new system services are installed, if starting them automatically during boot is desired.
+
+{{Note | This 'BSD-style' init, is the Arch way of handling what other distributions handle with various symlinks to an /etc/init.d directory.}}
+
+'''About DAEMONS'''
+
+The [[daemons]] line need not be changed at this time, but it is useful to explain what daemons are, as they will be addressed later in this guide.
+
+A ''daemon'' is a program that runs in the background, waiting for events to occur and offering services. A good example is a web server that waits for a request to deliver a page (e.g.:httpd) or an SSH server waiting for a user login (e.g.:sshd). While these are full-featured applications, there are also daemons whose work is not that visible. Examples are a daemon which writes messages into a log file (e.g. syslog, metalog), and a daemon which provides a graphical login (e.g.: gdm, kdm). All these programs can be added to the daemons line and will be started when the system boots. Useful daemons will be presented during this guide.
+
+Historically, the term ''daemon'' was coined by the programmers of MIT's Project MAC. They took the name from ''Maxwell's demon'', an imaginary being from a famous thought experiment that constantly works in the background, sorting molecules.  *nix systems inherited this terminology and created the backronym '''d'''isk '''a'''nd '''e'''xecution '''mon'''itor.
+
+{{Tip|All Arch daemons reside under /etc/rc.d/}}
+
+====/etc/fstab====
+The '''fstab''' (for '''f'''ile '''s'''ystems '''tab'''le) is part of the system configuration listing all available disks and disk partitions, and indicating how they are to be initialized or otherwise integrated into the overall system's filesystem. The '''/etc/fstab''' file is most commonly used by the '''mount''' command. The mount command takes a filesystem on a device, and adds it to the main system hierarchy that you see when you use your system. '''mount -a''' is called from /etc/rc.sysinit, about 3/4 of the way through the boot process, and reads /etc/fstab to determine which options should be used when mounting the specified devices therein. If '''noauto''' is appended to a filesystem in /etc/fstab, '''mount -a''' will not mount it at boot.
+
+''An example of {{Filename|/etc/fstab}}''
+ # <file system>                            <dir>     <type>  <options>     <dump> <pass>
+ devpts                                     /dev/pts  devpts  defaults      0      0
+ shm                                        /dev/shm  tmpfs   nodev,nosuid  0      0
+ UUID=0ddfbb25-9b00-4143-b458-bc0c45de47a0  /         ext4    defaults      0      1
+ UUID=da6e64c6-f524-4978-971e-a3f5bd3c2c7b  /var      ext4    defaults      0      2
+ UUID=440b5c2d-9926-49ae-80fd-8d4b129f330b  swap      swap    defaults      0      0
+ UUID=95783956-c4c6-4fe7-9de6-1883a92c2cc8  /home     ext4    defaults      0      2
+
+{{Note|See [[Fstab]] for more information and performance tweaks such as 'noatime'/'relatime'.}}
+
+; <file system> : describes the block device or remote filesystem to be mounted. For regular mounts, this field will contain a link to a block device node (as created by mknod which is called by udev at boot) for the device to be mounted; for instance, '/dev/cdrom' or '/dev/sda1'. {{Note | If your system has more than one hard drive, the installer will default to using UUID rather than the sd''x'' naming scheme, for consistent device mapping. '''[[Persistent block device naming| Utilizing UUID]] has several advantages and may also be preferred to avoid issues if hard disks are added to the system in the future.''' Due to active developments in the kernel and also udev, the ordering in which drivers for storage controllers are loaded may change randomly, yielding an unbootable system/kernel panic. Nearly every motherboard has several controllers (onboard SATA, onboard IDE), and due to the aforementioned development updates, /dev/sda may become /dev/sdb on the next reboot. (See [[Persistent block device naming| this wiki article]] for more information on persistent block device naming. )}}
+
+; <dir> : describes the mount point for the filesystem. For swap partitions, this field should be specified as 'swap'; (Swap partitions are not actually mounted.)
+
+; <type> : describes the type of the filesystem. The Linux kernel supports many filesystem types. (For the filesystems currently supported by the running kernel, see /proc/filesystems). An entry 'swap' denotes a file or partition to be used for swapping. An entry 'ignore' causes the line to be ignored. This is useful to show disk partitions which are currently unused.
+
+; <options> : describes the mount options associated with the filesystem. It is formatted as a comma-separated list of options with no intervening spaces. It contains at least the type of mount plus any additional options appropriate to the filesystem type. For documentation on the available options for non-nfs file systems, see mount(8).
+
+; <dump> : used by the dump(8) command to determine which filesystems are to be dumped. dump is a backup utility. If the fifth field is not present, a value of zero is returned and dump will assume that the filesystem does not need to be backed up. ''Note that dump is not installed by default.''
+
+; <pass> : used by the fsck(8) program to determine the order in which filesystem checks are done at boot time. The root filesystem should be specified with a <pass> of 1, and other filesystems should have a <pass> of 2 or 0. Filesystems within a drive will be checked sequentially, but filesystems on different drives will be checked at the same time to utilize parallelism available in the hardware. If the sixth field is not present or zero, a value of zero is returned and fsck will assume that the filesystem does not need to be checked.
+
+Expanded information available in the [[Fstab]] wiki entry.
+
+===='''[[Configuring mkinitcpio | /etc/mkinitcpio]].conf'''====
+''Most users will not need to modify this file at this time, but please read the following explanatory information.''
+
+This file allows further fine-tuning of the initial ram filesystem, or initramfs, (also historically referred to as the initial ramdisk or "initrd") for your system. The initramfs is a gzipped image that is read by the kernel during boot. The purpose of the initramfs is to bootstrap the system to the point where it can access the root filesystem. This means it has to load any modules that are required for devices like IDE, SCSI, or SATA drives (or USB/FW, if you are booting from a USB/FW drive). Once the initrramfs loads the proper modules, either manually or through udev, it passes control to the kernel and your boot continues. For this reason, the initramfs only needs to contain the modules necessary to access the root filesystem. It does not need to contain every module you would ever want to use. The majority of common kernel modules will be loaded later on by udev, during the init process.
+
+<code>mkinitcpio</code> is the next generation of '''initramfs creation'''. It has many advantages over the old <code>mkinitrd</code> and <code>mkinitramfs</code> scripts.
+
+* It uses '''glibc''' and '''busybox''' to provide a small and lightweight base for early userspace.
+* It can use '''udev''' for hardware autodetection at runtime, thus preventing numerous unnecessary modules from being loaded.
+* Its hook-based init script is easily extendable with custom hooks, which can easily be included in pacman packages without having to modifiy mkinitcpio itself.
+* It already supports '''lvm2''', '''dm-crypt''' for both legacy and luks volumes, '''raid''', '''swsusp''' and '''suspend2''' resuming and booting from '''usb mass storage''' devices.
+* Many features can be configured from the kernel command line without having to rebuild the image.
+* The '''mkinitcpio''' script makes it possible to include the image in a kernel, thus making a self-contained kernel image is possible.
+* Its flexibility makes recompiling a kernel unnecessary in many cases.
+
+If using RAID or LVM on the root filesystem, the appropriate HOOKS must be configured. See the wiki pages for [[Installing with Software RAID or LVM| RAID]] and [[Configuring mkinitcpio | /etc/mkinitcpio]] for more info. If using a non-US keyboard. add the "<code>keymap</code>" hook to load your local keymap during boot. Add the "<code>usbinput</code>" hook if using a USB keyboard. Remember to add the "<code>usb</code>" hook when installing arch on an external hard drive, Comfact Flash, or SD card, which is connected via usb, e.g.:
+ HOOKS="base udev autodetect pata scsi sata usb filesystems keymap usbinput"
+(Otherwise, if boot fails for some reason you will be asked to enter root's password for system maintenance but will be unable to do so.)
+
+If you need support for booting from USB devices, FireWire devices, PCMCIA devices, NFS shares, software RAID arrays, LVM2 volumes, encrypted volumes, or DSDT support, configure your HOOKS accordingly.
+
+==== /etc/modprobe.d/modprobe.conf====
+
+This file can be used to set special configuration options for the kernel modules. It is unnecessary to configure this file in the example.
+
+====/etc/resolv.conf====
+{{Note|If you are using DHCP, you may safely ignore this file, as by default, it will be dynamically created and destroyed by the dhcpcd daemon. You may change this default behavior if you wish. See the [[Network#For DHCP IP|Network]] and [[Resolv.conf]] pages for more information.}}
+
+The ''resolver'' is a set of routines in the C library that provide access to the Internet Domain Name System (DNS). One of the main functions of DNS is to translate domain names into IP addresses, to make the Web a friendlier place. The resolver configuration file, or /etc/resolv.conf, contains information that is read by the resolver routines the first time they are invoked by a process.
+
+If you use a static IP, set your DNS servers in /etc/resolv.conf  (nameserver <ip-address>). You may have as many as you wish. 
+An example, using OpenDNS:
+ nameserver 208.67.222.222
+ nameserver 208.67.220.220
+
+If you are using a router, you will probably want to specify your DNS servers in the router itself, and merely point to it from your {{Filename|/etc/resolv.conf}}, using your router's IP (which is also your gateway from {{Filename|/etc/rc.conf}}). Example:
+ nameserver 192.168.1.1
+
+If using '''DHCP''', you may also specify your DNS servers in the router, or allow automatic assignment from your ISP, if your ISP is so equipped.
+
+====/etc/hosts====
+
+This file associates IP addresses with hostnames and aliases, one line per IP address. For each host a single line should be present with the following information:
+ <IP-address> <hostname> [aliases...]
+Add your ''hostname'', coinciding with the one specified in /etc/rc.conf, as an alias, so that it looks like this:
+ 127.0.0.1   localhost.localdomain   localhost '''''yourhostname'''''
+{{Warning |''This format, '''including the 'localhost' and your actual host name''', is required for program compatibility! So, if you have named your computer "arch", then that line above should look like this:
+ 127.0.0.1   localhost.localdomain   localhost arch
+Errors in this entry may cause poor network performance and/or certain programs to open very slowly, or not work at all. This is a very common error for beginners.''}}
+{{Note | Recent versions of the Arch Linux Installer automatically add your hostname to this file once you edit {{Filename|/etc/rc.conf}} with such information. If, for whatever reason, this is not the case, you may add it yourself with the given instructions.}}
+
+If you use a static IP, add another line using the syntax: <static-IP> <hostname.domainname.org>   <hostname> e.g.:
+ 192.168.1.100 '''''yourhostname'''''.domain.org  '''''yourhostname'''''
+
+{{Tip|For convenience, you may also use /etc/hosts aliases for hosts on your network, and/or on the Web, e.g.:
+ 64.233.169.103   www.google.com   g
+ 192.168.1.90   media
+ 192.168.1.88   data
+The above example would allow you to access google simply by typing 'g' into your browser, and access to a media and data server on your network by name and without the need for typing out their respective IP addresses.}}
+
+====/etc/hosts.deny and /etc/hosts.allow====
+Modify these configurations according to your needs if you plan on using the [[SSH|ssh]] daemon. The default configuration will reject all incoming connections, not only ssh connections. Edit your '''/etc/hosts.allow '''file and add the appropriate parameters:
+
+* Let everyone connect to you
+ sshd: ALL
+
+* Restrict it to a certain ip
+ sshd: 192.168.0.1
+
+* Restrict it to your local LAN network (range 192.168.0.0 to 192.168.0.255)
+ sshd: 192.168.0.
+
+* Restrict for an IP range
+ sshd: 10.0.0.0/255.255.255.0
+
+If you do not plan on using the [[SSH|ssh]] daemon, leave this file at the default, (empty).
+
+====/etc/locale.gen====
+The <code>/usr/sbin/locale-gen</code> command reads from '''/etc/locale.gen''' to generate specific locales. They can then be used by '''glibc''' and any other locale-aware program or library for rendering text, correctly displaying regional monetary values, time and date formats, alphabetic idiosyncrasies, and other locale-specific standards.
+
+By default {{Filename|/etc/locale.gen}} is an empty file with commented documentation. Once edited, the file remains untouched. <code>locale-gen</code> runs on every '''glibc''' upgrade, generating all the locales specified in {{Filename|/etc/locale.gen}}.
+
+Choose the locale(s) you need (remove the # in front of the lines you want), e.g.:
+ en_US ISO-8859-1
+ en_US.UTF-8
+
+The installer will now run the locale-gen script, which will generate the locales you specified. You may change your locale in the future by editing /etc/locale.gen and subsequently running 'locale-gen' as root.
+
+{{Note|If you fail to choose your locale, this will lead to a "The current locale is invalid..." error. This is perhaps the most common mistake by new Arch users.}}
+
+====Pacman-Mirror====
+Choose a mirror repository for '''<code>pacman</code>'''. Remember that archlinux.org is throttled, limiting downloads to 50KB/s.  Check [[Mirrors]] for more details about selecting a pacman mirror.
+
+====Root password====
+Finally, set a root password and make sure that you remember it later. Return to the main menu and continue with installing bootloader.
+
+====Done====
+When you select "Done", the system will rebuild the images and put you back to the Main Menu.  This may take some time.
+
+===Install Bootloader===
+Because we have no secondary operating system in our example, we will need a bootloader. [[GRUB]] is the recommended bootloader and will be used in the following examples. Alternatively, you may choose [[LILO]] or [[Syslinux]]. Please see the related wiki and documentation pages if you choose to use a bootloader other than GRUB.
+
+The provided '''GRUB''' configuration ({{Filename|/boot/grub/menu.lst}}) should be sufficient, but verify its contents to ensure accuracy (specifically, ensure that the root (/) partition is specified by UUID on line 3). You may want to alter the resolution of the console  by adding a vga=<number> kernel argument corresponding to your desired virtual console resolution. (A table of resolutions and the corresponding numbers is printed in the {{Filename|menu.lst}}.)
+
+Explanation:
+
+; title : A printed menu selection. &quot;Arch Linux (Main)&quot; will be printed on the screen as a menu selection.
+; root : '''GRUB''''s root; the drive and partition where the kernel (/boot) resides, according to system BIOS. (More accurately, where GRUB's stage2 file resides). '''NOT necessarily the root''' (/) file system, as they can reside on separate partitions. GRUB's numbering scheme starts at 0, and uses an hd''x,x'' format regardless of IDE or SATA, and enclosed within parentheses. The example indicates that /boot is on the first partition of the first drive, according to the BIOS, so (hd0,0).
+; kernel : This line specifies: 
+:* The path and filename of the kernel '''''relative to GRUB's root'''''. In the example, /boot is merely a directory residing on the same partition as / and '''vmlinuz26''' is the kernel filename; {{Filename|/boot/vmlinuz26}}. If /boot were on a separate partition, the path and filename would be simply {{Filename|/vmlinuz26}}, being relative to '''GRUB''''s root.
+
+:* The <tt>root=</tt> argument to the kernel statement specifies the partition containing the root (/) directory in the booted system, (more accurately, the partition containing {{Filename|/sbin/init}}). An easy way to distinguish the 2 appearances of 'root' in {{Filename|/boot/grub/menu.lst}} is to remember that the first root statement ''informs GRUB where the kernel resides'', whereas the second <tt>root=</tt> kernel argument ''tells the kernel where the root filesystem (/) resides''.
+
+:* Kernel options. In our example, '''ro''' mounts the filesystem as read-only during startup, (usually a safe default; you may wish to change this in case it causes problems booting). Depending on hardware, rootdelay=8 may need to be added to the kernel options in order to be able to boot from an external usb hard drive.
+
+; initrd : The path and filename of the initial RAM filesystem '''relative to GRUB''''s root. Again, in the example, /boot is merely a directory residing on the same partition as / and '''kernel26.img''' is the initrd filename; '''/boot/kernel26.img'''. If /boot were on a separate partition, the path and filename would be simply '''/kernel26.img''', being relative to '''GRUB''''s root.
+
+''Example''
+ title  Arch Linux (Main)
+ root   (hd0,0)
+ kernel /boot/vmlinuz26 root=/dev/sda1 ro
+ initrd /boot/kernel26.img
+
+''Example for /boot on a separate partition''
+ title  Arch Linux (Main)
+ root   (hd0,0)
+ kernel /vmlinuz26 root=/dev/sda3 ro
+ initrd /kernel26.img
+
+Install the '''GRUB''' bootloader to the master boot record (/dev/sda in our example).
+
+{{Warning|Make sure to install GRUB on '''/dev/sdX''' and '''not /dev/sdX''#'''''! This is a common mistake.}}
+
+{{tip|For more details, see the [[GRUB]] wiki page.}}
+
+===Reboot===
+That's it; You have configured and installed your Arch Linux base system. Exit the install, and reboot:
+ # reboot
+{{Tip|Be sure to remove the installation media and perhaps change the boot preference in your BIOS; otherwise you may boot back into the installation!}}<noinclude>
+
+{{Beginners' Guide navigation}}
+</noinclude>
+
