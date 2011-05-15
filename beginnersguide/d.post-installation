@@ -1,0 +1,223 @@
+==Post-Installation==
+'''Congratulations, and welcome to your new Arch Linux base system!'''
+
+This section will cover various must-do procedures after installation such as updating your new system and adding a regular, non-root user.
+
+===Update===
+Your new Arch Linux base system is now a functional GNU/Linux environment ready for customization. From here, you may build this elegant set of tools into whatever you wish or require for your purposes.
+
+Login with the root account. We will configure pacman and update the system as root.
+
+{{Note|Virtual consoles 1-6 are available. You may switch between them with <ALT>+F1...F6}}
+
+====Configure the network (if necessary)====
+If you properly configured your system, you should have a working network. Try to <code>ping www.google.com</code> to verify:
+{{Command|ping -c 3 www.google.com |<nowiki>PING www.l.google.com (74.125.229.51) 56(84) bytes of data.
+64 bytes from 74.125.229.51: icmp_seq=1 ttl=51 time=26.8 ms
+64 bytes from 74.125.229.51: icmp_seq=2 ttl=51 time=27.4 ms
+64 bytes from 74.125.229.51: icmp_seq=3 ttl=51 time=26.8 ms
+
+--- www.l.google.com ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+rtt min/avg/max/mdev = 26.847/27.053/27.436/0.330 ms</nowiki>|prompt=#}}
+
+If you have successfully established a network connection, continue with '''[[#Update, Sync, and Upgrade the system with pacman|Update, Sync, and Upgrade the system with pacman]]'''.
+
+If, after trying to ping www.google.com, an "unknown host" error is received, you may conclude that your network is not properly configured. You may choose to double-check the following files for integrity and proper settings:
+
+{{Filename|/etc/rc.conf}} - Specifically, check your HOSTNAME and NETWORKING section for typos and errors.
+
+{{Filename|/etc/hosts}} - Double-check for format, typos, and errors.
+
+{{Filename|/etc/resolv.conf}} - If you are using a static IP. If you are using DHCP, this file will be dynamically created and destroyed by default.
+
+{{Tip|Advanced instructions for configuring the network can be found in the [[Network]] article.}}
+
+=====Wired LAN=====
+Check your Ethernet with
+ # ifconfig -a
+All interfaces will be listed. You should see an entry for eth0, or perhaps eth1. These examples will use eth0.
+
+'''Static IP'''
+
+If required, you can set a new static IP with:
+ # ifconfig eth0 <ip address> netmask <netmask> up
+and the default gateway with
+ # route add default gw <ip address of the gateway>
+Verify that {{Filename|/etc/resolv.conf}} contains your DNS server and add it if it is missing.
+Check your network again with <code>ping -c 3 www.google.com</code>. If everything is working now, adjust {{Filename|/etc/rc.conf}} as described above for static IP.
+
+'''DHCP'''
+
+If you have a DHCP server/router in your network try:
+ # dhcpcd eth0
+If this is working, adjust {{Filename|/etc/rc.conf}} as described above, for dynamic IP.
+
+=====Wireless LAN=====
+Please see [[<noinclude>Beginners' Guide/Installation</noinclude>#Wireless Quickstart For the Live Environment|Wireless Quickstart For the Live Environment]] for details on connecting to a wireless network. Although you are no longer running off the installation media, the commands are the same as long as you installed all related wireless packages during package selection. Remember, your wireless device may need firmware in order to operate. For troubleshooting, check the detailed [[Wireless Setup]] page.
+
+=====Proxy Server=====
+If you are behind a proxy server, edit {{Filename|/etc/wgetrc}} and set http_proxy and ftp_proxy in it.
+
+=====Analog Modem, ISDN, and DSL (PPPoE)=====
+See [[Internet Access]] for detailed instructions.
+
+====Update, Sync, and Upgrade the system with [[pacman]]====
+Now we will update the system using [[pacman]]. [[Pacman]] is the '''pac'''kage '''man'''ager of Arch Linux. It manages your entire package system and handles installation, removal, package downgrade (through cache), custom compiled package handling, automatic dependency resolution, remote and local searches and much more. Pacman will now be used to download software packages from remote repositories and install them onto your system.
+
+{{Note|If you installed via a Netinstall, many, if not all, of your packages will already be up to date. However, it is still advisable to run through this update process.}}
+
+=====/etc/pacman.conf=====
+pacman will attempt to read {{Filename|/etc/pacman.conf}} each time it is invoked.  This configuration file is divided into sections, or repositories.  Each  section  defines  a package [[Official Repositories|repository]] that pacman can use when searching for packages. The exception to this is the <tt>options</tt> section, which defines global options.
+
+{{Note| The defaults should work, so modifying at this point may be unnecessary, but verification is always recommended. Further info available in the [[Mirrors]] article.}}
+
+ # nano /etc/pacman.conf
+
+Repositories are described below; enable all desired repositories by removing the # in front of the 'Include =' and '[repository]' lines.
+
+{{Note|<nowiki>When choosing repos, be sure to uncomment both the repository header lines in [brackets] as well as the 'Include =' lines. Failure to do so will result in the selected repository being omitted! This is a very common error.</nowiki>}}
+
+=====Package Repositories=====
+A [[Wikipedia:software repository|software repository]] is a storage location from which software packages may be retrieved and installed on a computer. Arch Linux [[Package Maintainer|package maintainers]] (developers and [[Trusted Users]]) maintain a number of official repositories containing software packages for essential and popular software, readily accessible via [[pacman]]. This article outlines those officially-supported repositories. See [[Official Repositories]] for more information including details about the purpose of each repository.
+
+Most people will want to use [core], [extra] and [community]. If you want to run 32-bit applications on Arch x86_64, enable the [multilib] repository by adding the lines below to /etc/pacman.conf:
+
+ [multilib]
+ Include = /etc/pacman.d/mirrorlist
+
+=====AUR=====
+The '''[[AUR]]''' also contains the '''unsupported''' branch, which cannot be accessed directly by pacman*. '''AUR''' [unsupported] does not contain binary packages. Rather, it provides more than twenty-eight thousand PKGBUILD scripts for building packages from source, that may be unavailable through the other repos. When an AUR unsupported package acquires enough popular votes, it may be moved to the AUR [community] binary repo, if a TU is willing to adopt and maintain it there.
+* TU maintained
+* All PKGBUILD bash build scripts
+* '''Not''' pacman accessible by default
+
+<nowiki>*</nowiki> pacman wrappers ('''''[[AUR Helpers]]''''') can help you seamlessly access AUR.
+
+====/etc/pacman.d/mirrorlist====
+Defines pacman repository mirrors and priorities.
+
+{{Note|If your installation medium is old, your mirrorlist might be outdated, which might lead to problems when updating archlinux with pacman (see here for the [https://bugs.archlinux.org/task/22510 bug report]). Therefore it is a good idea to get the latest version of the mirrorlist from [http://www.archlinux.org/mirrorlist/ the pacman mirror list generator page]. Copy the freshly generated list to {{Filename|/etc/pacman.d/mirrorlist}} before you continue.}}
+
+Open {{Filename|/etc/pacman.d/mirrorlist}} in an editor and uncomment (remove the '#' in front) a server close to you. Then issue a complete package refresh:
+ # pacman -Syy
+Passing two --refresh or -y flags forces pacman to refresh all package lists even if they are considered to be up to date. Issuing pacman -Syy ''whenever a mirror is changed'', is good practice and will avoid possible headaches.
+
+=====<tt>rankmirrors</tt>=====
+Alternatively, you can use <code>rankmirrors</code>. <code>rankmirrors</code> is a bash script which will attempt to detect uncommented mirrors specified in {{Filename|/etc/pacman.d/mirrorlist}} which are closest to the installation machine based on latency. Faster mirrors will dramatically improve pacman performance, and the overall Arch Linux experience. This script may be run periodically, especially if the chosen mirrors provide inconsistent throughput and/or updates. Note that <code>rankmirrors</code> does not test for throughput. Tools such as <code>wget</code> or <code>rsync</code> may be used to effectively test for mirror throughput after a new {{Filename|/etc/pacman.d/mirrorlist}} has been generated.
+
+Issue the following command to completely refresh package database, upgrade and install <code>curl</code>:
+ # pacman -Syyu curl
+
+*''If you get an error at this step, use the command "nano /etc/pacman.d/mirrorlist" and uncomment a server that suits you.''
+
+<code>cd</code> to the {{Filename|/etc/pacman.d/}} directory:
+ # cd /etc/pacman.d
+Backup the existing {{Filename|/etc/pacman.d/mirrorlist}}:
+ # cp mirrorlist mirrorlist.backup
+Edit mirrorlist.backup and uncomment all mirrors on the same continent or within geographical proximity to test with rankmirrors.
+ # nano mirrorlist.backup
+Run the script against the mirrorlist.backup with the -n switch and redirect output to a new /etc/pacman.d/mirrorlist file:
+ # rankmirrors -n 6 mirrorlist.backup > mirrorlist
+'''-n 6''': rank the 6 closest mirrors
+
+Force pacman to refresh all package lists with the new mirrorlist in place:
+ # pacman -Syy
+
+=====Mirrorcheck for up-to-date packages=====
+Since <code>rankmirrors</code> does not take into account how up-to-date a mirror's package list is, it is important to note that one or more of the mirrors it selects as fastest may still be out-of-date. [http://www.archlinux.org/mirrors/status/ ArchLinux MirrorStatus] reports various aspects about the mirrors such as network problems with mirrors, data collection problems, the last time mirrors have been synced, etc. One may wish to manually inspect {{Filename|/etc/pacman.d/mirrorlist}}, ensuring that the file contains only up-to-date mirrors if having the latest package versions is a priority.
+
+Alternatively, the [http://www.archlinux.org/mirrorlist/ Mirrorlist Generator] can automatically rank mirrors close to your location by how up-to-date they are.
+
+====Get familiar with pacman====
+pacman is the Arch user's best friend. It is highly recommended to study and learn how to use the pacman(8) tool. Try:
+ $ man pacman
+
+For more information, have a look at the [[pacman]] wiki entry at your own leisure, or check out the [[pacman rosetta]] entry for a comparison to other popular package managers.
+
+====Update the System====
+You are now ready to upgrade your entire system.  Before you do, read through the [http://www.archlinux.org/news/ news] (and optionally the [http://archlinux.org/pipermail/arch-announce/ announce mailing list]).  Often the developers will provide important information about required configurations and modifications for known issues. Consulting these pages before any upgrade is good practice.
+
+Sync, refresh, and upgrade your entire new system with:
+ # pacman -Syu
+or:
+ # pacman --sync --refresh --sysupgrade
+
+pacman will now download a fresh copy of the master package list from the server(s) defined in {{Filename|/etc/pacman.conf}} and perform all available upgrades. You may be prompted to upgrade pacman itself at this point. If so, say yes, and then reissue the <code>pacman -Syu</code> command when finished.
+
+Reboot if a kernel upgrade has occurred.
+
+{{Note|Occasionally, configuration changes may take place requiring user action during an update; read pacman's output for any pertinent information.}}
+
+Pacman output is saved in {{Filename|/var/log/pacman.log}}.
+
+See [[Package_Management_FAQs|Package Management FAQs]] for answers to frequently asked questions regarding updating and managing your packages.
+
+=====Ignoring Packages=====
+After executing the command <code>pacman -Syu</code>, the entire system will be updated. It is possible to prevent a package from being upgraded. A typical scenario would be a package for which an upgrade may prove problematic for the system. In this case, there are two options; indicate the package(s) to skip in the pacman command line using the --ignore switch (<code>pacman -S --help</code> for details) or permanently indicate the package(s) to skip in the /etc/pacman.conf file in the IgnorePkg array. For more information, please see the [[pacman]] wiki entry.
+
+Please note that the power user is expected to keep the system up to date with pacman -Syu, rather than selectively upgrading packages. You may diverge from this typical usage as you wish; just be warned that there is a greater chance that things will not work as intended and that it could break your system. The majority of complaints happen when selective upgrading, unusual compilation or improper software installation is performed. Use of '''IgnorePkg''' in /etc/pacman.conf is therefore discouraged, and should only be used sparingly, if you know what you are doing.
+
+=====The Arch rolling release model=====
+Keep in mind that Arch is a '''rolling release''' distribution. This means there is never a reason to reinstall or perform elaborate system rebuilds to upgrade to the newest version. Simply issuing <code>pacman -Syu</code> periodically keeps your entire system up-to-date and on the bleeding edge. At the end of this upgrade, your system is completely current. Remember to '''reboot''' if a kernel upgrade has occurred.
+
+===Adding a User===
+{{Note|Before adding your users, consider hardening your system by switching from md5 password hashes to sha512 password hashes (see: [[SHA password hashes]]).}}
+
+Linux is a multi-user environment. You should not do your everyday work using the root account. It is more than poor practice; it is dangerous. Root is for administrative tasks. Instead, add a normal, non-root, user account using the <code>/usr/sbin/useradd</code> program.
+
+ # useradd -m -g [initial_group] -G [additional_groups] -s [login_shell] [username]
+* '''-m''' Creates user home directory as /home/'''username'''. Within their home directory, a user can write files, delete them, install programs, etc. Users' home directories shall contain their data and personal configuration files, the so-called 'dot files' (their name is preceded by a dot), which are 'hidden'. (To view dotfiles, enable the appropriate option in your file manager or run ls with the -a switch.) If there is a conflict between ''user'' (under /home/username) and ''global'' configuration files, (usually under /etc/) the settings in the ''user'' file will prevail. Dotfiles likely to be altered by the end user include .xinitrc and .bashrc files. The configuration files for xinit and Bash respectively. They allow the user the ability to change the window manager to be started upon login and also aliases, user-specified commands and environment variables respectively. When a user is created, their dotfiles shall be taken from the /etc/skel directory where system sample files reside.
+* '''-g''' The group name or number of the user's initial login group. The group name must exist. If a group number is provided, it must refer to an already existing group. If not specified, the behavior of useradd will depend on the USERGROUPS_ENAB variable contained in /etc/login.defs.
+* '''-G'''  A list of supplementary groups which the user is also a member of. ''Each group is separated from the next by a comma, with no intervening spaces''. The default is for the user to belong only to the initial group.
+* '''-s''' The path and filename of the user´s default login shell. Arch Linux init scripts use Bash. After the boot process is complete, the default login shell is user-specified. (Ensure the chosen shell package is installed if choosing something other than Bash).
+Useful groups for your non-root user include:
+*'''audio''' - for tasks involving sound card and related software
+*'''floppy''' - for access to a floppy if applicable
+*'''lp''' - for managing printing tasks
+*'''optical''' - for managing tasks pertaining to the optical drive(s)
+*'''storage''' - for managing storage devices
+*'''video''' - for  video tasks and hardware acceleration
+*'''wheel''' - for using sudo
+*'''games''' - needed for write permission for games in the games group
+*'''power''' - used w/ power options (e.g.: shutdown with power button)
+*'''scanner''' - for using a scanner
+A typical desktop system example, adding a user named "archie" specifying bash as the login shell:
+ # useradd -m -g users -G audio,lp,optical,storage,video,wheel,games,power,scanner -s /bin/bash archie
+Next, add a password for your new user using <code>/usr/bin/passwd</code>.
+
+An example for our user, 'archie':
+ # passwd archie
+(You will be prompted to provide the new password.)
+
+Your new non-root user has now been created, complete with a home directory and a login password.
+
+'''Deleting the user account:'''
+
+In the event of error, or if you wish to delete this user account in favor of a different name or for any other reason, use <code>/usr/sbin/userdel</code>:
+ # userdel -r [username]
+* '''-r ''' Files in the user´s home directory will be removed along with the home directory itself and the user´s mail spool.
+
+See [[Users and Groups]] for further information. If you want to change the name of your user or any existing user, consult the [[Change username]] page. You may also check the man pages for <code>usermod(8)</code> and <code>gpasswd(8)</code>.
+
+====Install and setup Sudo (Optional)====
+Install Sudo:
+ # pacman -S sudo
+To add a user as a sudo user (a &quot;sudoer&quot;), the visudo command must be run as root.
+
+By default, the visudo command uses the editor [[vi]].  If you do not know how to use vi, you may set the EDITOR environment variable to the editor of your choice, such as in this example with the editor "nano":
+ # EDITOR=nano visudo
+{{Note|Please note that you are setting the variable and starting visudo on the same line at the same time.  This will not work properly as two separated commands.}}
+
+If you are comfortable using vi, issue the visudo command without the EDITOR=nano variable:
+ # visudo
+This will open the file /etc/sudoers in a special session of vi. visudo copies the file to be edited to a temporary file, edits it with an editor, (vi by default), and  subsequently runs a sanity check. If it passes, the temporary file overwrites the original with the correct permissions.
+
+{{Warning|Do not edit /etc/sudoers directly with an editor; Errors in syntax can cause annoyances (like rendering the root account unusable). You must use the ''visudo'' command to edit /etc/sudoers.}}
+
+In the previous section we added your user to the "wheel" group. To give users in the wheel group full root privileges when they precede a command with &quot;sudo&quot;, uncomment the following line:
+ %wheel	ALL=(ALL) ALL
+Now you can give any user access to the sudo command by simply adding them to the wheel group.
+
+For more information, such as sudoer <TAB> completion, see [[Sudo]].
+

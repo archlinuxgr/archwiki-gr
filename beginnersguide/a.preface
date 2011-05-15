@@ -1,0 +1,43 @@
+==Preface==
+===Introduction===
+Welcome. This document will guide you through the process of installing and configuring [[Arch Linux]]; a simple, lightweight GNU/Linux distribution targeted at competent users. This guide is aimed at new Arch users, but strives to serve as a strong reference and informative base for all.
+
+'''Arch Linux Distribution Highlights:'''
+* [[The Arch Way|Simple]] design and philosophy
+* [http://www.archlinux.org/packages/?q= All packages] compiled for i686 and x86_64 architectures
+* [[Arch Boot Process|BSD style]] init scripts, featuring one centralized configuration file
+* [[mkinitcpio]]: A simple and dynamic initramfs creator
+* [[Pacman]] package manager is lightweight and agile, with a very modest memory footprint
+* The [[Arch Build System]]: A ports-like package building system, providing a simple framework to create installable Arch packages from source
+* The [[Arch User Repository]]: offering many thousands of user contributed build scripts and the opportunity to share your own
+
+===License===
+Arch Linux, pacman, documentation, and scripts are copyright
+©2002-2007 by Judd Vinet, ©2007-2011 by Aaron Griffin and are licensed under the [http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License Version 2].
+
+===The Arch Way===
+'''''The design principles behind Arch are aimed at keeping it [[The Arch Way |simple]].'' '''
+
+'Simple', in this context, shall mean 'without unnecessary additions, modifications, or complications'. In short; an elegant, minimalist approach.
+
+'''Some thoughts to keep in mind as you consider simplicity:'''
+
+*''&quot; 'Simple' is defined from a technical standpoint, not a usability standpoint. It is better to be technically elegant with a higher learning curve, than to be easy to use and technically [inferior].&quot; -Aaron Griffin''
+*''Entia non sunt multiplicanda praeter necessitatem'' or &quot;Entities should not be multiplied unnecessarily.&quot; -Occam's razor. The term ''razor'' refers to the act of shaving away unnecessary complications to arrive at the simplest explanation, method or theory.
+*''&quot;The extraordinary part of [my method] lies in its simplicity..The height of cultivation always runs to simplicity.&quot;'' - Bruce Lee
+
+===About This Guide===
+The community-maintained [[Main Page|Arch wiki]] is an excellent resource and should be consulted for issues first. The [[Wikipedia:IRC|IRC]] channel (irc://irc.freenode.net/#archlinux), and the [https://bbs.archlinux.org/ forums] are also available if the answer cannot be found elsewhere. Also, be sure to check out the <code>man</code> pages for any command you are unfamiliar with; this can usually be invoked with <code>man ''command''</code>.
+
+{{Note|Following this guide closely is essential in order to successfully install a properly configured Arch Linux system, so ''please'' read it thoroughly. It is strongly recommended you read each section completely <u>before</u> carrying out the tasks contained.}}
+
+The guide is divided into 4 main components:
+
+*[[<noinclude>Beginners' Guide/Preparation</noinclude>#Prepare the Installation|Part I: Prepare the Installation]]
+*[[<noinclude>Beginners' Guide/Installation</noinclude>#Install the Base System|Part II: Install the Base system]]
+*[[<noinclude>Beginners' Guide/Post-Installation</noinclude>#Post-Installation|Part III: Post-Installation]]
+*[[<noinclude>Beginners' Guide/Post-Installation</noinclude>#Extras|Part IV: Extras]]<noinclude>
+
+{{Beginners' Guide navigation}}
+</noinclude>
+
